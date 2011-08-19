@@ -142,7 +142,13 @@ readTodos = (filepath, callback) ->
 			)
 	)
 	process.on("exit", () ->
+		console.log("exiting!")
 		fs.unwatchFile(todoFile)
+	)
+	process.on("SIGINT", () ->
+		console.log("SIGINT!")
+		# call process.exit so that we get the exit event for cleanup
+		process.exit()
 	)
 	
 	
