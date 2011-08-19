@@ -1,3 +1,3 @@
 *.tmproj
-server/build/
+server/lib/
 node_modules/
