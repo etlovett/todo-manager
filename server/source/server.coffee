@@ -105,54 +105,91 @@ updateTodo = (todo, newFields) ->
 writeTodos = (filepath, todoArray, callback) ->
 	todoString = serializeTodos(todoArray)
 	fs.writeFile(filepath, todoString, "utf8", callback)
-	
+
+readTodos = (filepath, callback) ->
+	fs.readFile(filepath, "utf8", (error, data) ->
+		if error
+			callback(error)
+		else
+			todoArray = deserializeTodos(data)
+			callback(error, todoArray)
+	)
 
 
-# 
+
+#
 # Start up the server
-# 
+#
 
-todoFile = "./todo.txt"
-
-fs.readFile(todoFile, "utf8", (error, data) ->
-	if error then throw error
+# wrap this so that the psuedo-globals (todoFile and todoArray) don't pollute the helper methods above
+(() ->
 	
-	console.log("read!")
+	#
+	# Set up our globals
+	#
+	todoFile = "./todo.txt"
+	todoArray = []
 	
-	todoArray = deserializeTodos(data)
 	
-	server = express.createServer()
-	server.configure(() -> 
-		server.use(express.logger("dev"))
-		server.use(express.favicon())
-		server.use(express.bodyParser())
-		server.use(server.router)
-		# server.use(express.static(__dirname + "/../static", { maxAge: 24 * 60 * 60 * 1000 }))
-		server.use(express.errorHandler({ dumpExceptions: true, showStack: true }))
+	#
+	# Start watching the file, and ensure that we stop watching it when we go down
+	#
+	fs.watchFile(todoFile, (currStat, prevStat) ->
+		if currStat.mtime.getTime() isnt prevStat.mtime.getTime()
+			console.log("file changed externally!")
+			readTodos(todoFile, (error, newTodoArray) ->
+				todoArray = newTodoArray
+			)
+	)
+	process.on("exit", () ->
+		fs.unwatchFile(todoFile)
 	)
 	
-	server.get("/todos", (request, response) ->
-		response.send(todoArray)
-	)
 	
-	singleTodoPath = "/todo/:todoId"
-	server.get(singleTodoPath, parseTodoId, ensureTodoExistsForId.bind(undefined, todoArray), (request, response) ->
-		response.send(todoArray[request.todoId])
-	)
-	
-	server.post(singleTodoPath, parseTodoId, ensureTodoExistsForId.bind(undefined, todoArray), (request, response) ->
-		todoId = request.todoId
-		todoArray[todoId] = updateTodo(todoArray[todoId], request.body)
+	#
+	# Do the initial read of the file and start up the server
+	#
+	readTodos(todoFile, (error, newTodoArray) ->
+		if error then throw error
 		
-		writeTodos(todoFile, todoArray, (error) ->
-			if error
-				response.send(error)
-			else
-				response.send( returnValue: true )
+		console.log("read!")
+		
+		todoArray = newTodoArray
+		
+		server = express.createServer()
+		server.configure(() -> 
+			server.use(express.logger("dev"))
+			server.use(express.favicon())
+			server.use(express.bodyParser())
+			server.use(server.router)
+			# server.use(express.static(__dirname + "/../static", { maxAge: 24 * 60 * 60 * 1000 }))
+			server.use(express.errorHandler({ dumpExceptions: true, showStack: true }))
+		)
+		
+		server.get("/todos", (request, response) ->
+			response.send(todoArray)
+		)
+		
+		singleTodoPath = "/todo/:todoId"
+		server.get(singleTodoPath, parseTodoId, ensureTodoExistsForId.bind(undefined, todoArray), (request, response) ->
+			response.send(todoArray[request.todoId])
+		)
+		
+		server.post(singleTodoPath, parseTodoId, ensureTodoExistsForId.bind(undefined, todoArray), (request, response) ->
+			todoId = request.todoId
+			todoArray[todoId] = updateTodo(todoArray[todoId], request.body)
+			
+			writeTodos(todoFile, todoArray, (error) ->
+				if error
+					response.send(error)
+				else
+					response.send( returnValue: true )
+			)
+		)
+		
+		server.listen(5834, () ->
+			console.log("listening!")
 		)
 	)
 	
-	server.listen(5834, () ->
-		console.log("listening!")
-	)
-)
+)()

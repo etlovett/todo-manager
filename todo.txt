@@ -1,4 +1,4 @@
-0. ! Get node reading the file format correctly.
+0. ! Get node.js reading the file format correctly.
 1. - Write a README.
 2.   Set up an HTTP server for the client to talk to.
 3.   Set up the client to talk to the server and display the list.
