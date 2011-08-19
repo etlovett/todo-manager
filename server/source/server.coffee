@@ -1,41 +1,69 @@
 fs = require("fs")
 http = require("http")
+express = require("express")
+
+
+# 
+# Constants
+# 
+
+TODO_IMPORTANCE = 
+	LOW: 
+		CHAR: "-"
+		VALUE: -1
+	REGULAR: 
+		CHAR: ""
+		VALUE: 0
+	HIGH: 
+		CHAR: "!"
+		VALUE: 1
 
 
 # 
 # Helper methods
 # 
+
+importanceValueFromChar = (importanceChar = "") ->
+	for own importanceObjName, importanceObj of TODO_IMPORTANCE
+		if importanceObj.CHAR is importanceChar
+			return importanceObj.VALUE
+
+importanceCharFromValue = (importanceValue = 0) ->
+	for own importanceObjName, importanceObj of TODO_IMPORTANCE
+		if importanceObj.VALUE is importanceValue
+			return importanceObj.CHAR
+
 deserializeTodos = (fileString) ->
 	todoArray = fileString.split(/[\n\r]+/g)
 	
+	# parse each line in the file
 	todoArray = todoArray.map( (todoString) ->
 		if not todoString then return null
 		
-		match = todoString.match(/^([0-9]+)[^a-zA-Z0-9]{0,2}\s*(.*)$/i)
+		match = todoString.match(/^([0-9]+)[^a-zA-Z0-9]{0,2}\s+([!-])?\s*(.*)$/i)
 		
 		if not match then return null
 		
 		return {
 			index: match[1],
-			todo: match[2]
+			importanceChar: match[2]
+			todo: match[3]
 		}
 	, this)
 	
-	todoArray = todoArray.filter( (todoObj) ->
-		return !!todoObj
-	, this)
+	# filter out any blank lines
+	todoArray = todoArray.filter( (todoObj) -> return !!todoObj)
 	
-	return todoArray
-
-normalizeTodos = (todoArray) ->
-	if not Array.isArray(todoArray)
-		throw new Error("normalizeTodos: todoArray must be an array!")
+	# sort the array based on the index specified
+	todoArray = todoArray.sort( (todo1, todo2) ->
+		return (todo1.index - todo2.index)
+	)
 	
-	todoArray = sortTodos(todoArray)
+	# create the actual array of objects we will be using throughout the system
 	todoArray = todoArray.map( (curTodo, index) ->
 		return {
-			index: index + 1,
-			todo: curTodo.todo
+			todo: curTodo.todo,
+			importance: importanceValueFromChar(curTodo.importanceChar)
 		}
 	, this)
 	
@@ -45,18 +73,9 @@ serializeTodos = (todoArray) ->
 	if not Array.isArray(todoArray)
 		throw new Error("serializeTodos: todoArray must be an array!")
 	
-	todoArray = sortTodos(todoArray)
-	
-	todoString = todoArray.reduce( (acc, curTodo) ->
-		return acc + curTodo.index + ". " + curTodo.todo + "\n"
+	return todoArray.reduce( (acc, curTodo, curIndex) -> 
+		return acc + curIndex + ". " + importanceCharFromValue(curTodo.importance) + " " + curTodo.todo + "\n"
 	, "")
-	
-	return todoString
-
-sortTodos = (todoArray) ->
-	return todoArray.sort( (todo1, todo2) ->
-		return (todo1.index - todo2.index)
-	)
 
 
 # 
@@ -72,23 +91,39 @@ fs.readFile(todoFile, "utf8", (error, data) ->
 	console.log("read!")
 	
 	todoArray = deserializeTodos(data)
-	todoArray = normalizeTodos(todoArray)
 	
-	http.createServer( (request, response) ->
-		if (request.method is "GET")
-			response.writeHead(200, {
-				"content-type": "application/json"
-			})
-			response.write(JSON.stringify(todoArray))
-			response.end("\n")
-		else if (request.method is "POST")
-			response.end("sweet! \n")
-		else
-			response.statusCode = 405
-			response.end("Only GET and POST are supported")
-	).listen(5834, () ->
-		console.log("listening!")
+	server = express.createServer();
+	server.configure(() ->
+		server.use(express.bodyParser());
+		# server.use(express.methodOverride());
+		# server.use(server.router);
+	);
+	
+	server.get("/todos", (request, response) ->
+		console.log("get todos")
+		response.send(todoArray)
+	);
+	
+	server.get("/todo/:todoId([0-9]+)", (request, response) ->
+		todoId = parseInt(request.params.todoId, 10)
+		responseJSON = todoArray[todoId] ? { error: "invalid id" }
+		response.send(responseJSON)
+	);
+	
+	server.post("*", (request, response) ->
+		console.log("post")
+		response.send("sweet!")
 	)
+	
+	server.all("*", (request, response) ->
+		console.log("catch-all")
+		console.log("a 404!  request url: " + JSON.stringify(request.url))
+		response.send("What were you hoping for?", 404)
+	)
+	
+	server.listen(5834, () ->
+		console.log("listening!")
+	);
 	
 	# todoString = serializeTodos(todoArray)
 	# fs.writeFile(todoFileOut, todoString, "utf8", (error) ->

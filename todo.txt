@@ -1,3 +1,4 @@
-1. Get node reading the file format correctly.
-2. Set up an HTTP server for the client to talk to.
-3. Set up the client to talk to the server and display the list.
+1. !Get node reading the file format correctly.
+2. - Write a README.
+3. Set up an HTTP server for the client to talk to.
+4. Set up the client to talk to the server and display the list.
