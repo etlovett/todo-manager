@@ -1,6 +1,7 @@
 fs = require("fs")
 http = require("http")
 express = require("express")
+utils = require("./utils")
 
 
 # 
@@ -88,13 +89,23 @@ parseTodoId = (request, response, next) ->
 		request.todoId = parseInt(todoIdString, 10)
 		next()
 	else
-		response.send( error: "invalid id" )
+		response.send( error: "invalid id", 400 )
 
 ensureTodoExistsForId = (todoArray, request, response, next) ->
 	if todoArray[request.todoId]
 		next()
 	else
-		response.send( error: "invalid id" )
+		response.send( error: "no todo exists at that id", 400 )
+
+createTodo = (newFields) ->
+	if not newFields.todo then return [false, {}]
+	
+	# TODO: check the incoming properties for validity
+	newTodo = 
+		todo: newFields.todo
+		importance: parseInt(newFields.importance, 10) ? 0
+	
+	return [true, newTodo]
 
 updateTodo = (todo, newFields) ->
 	# TODO: check the incoming properties for validity
@@ -121,7 +132,7 @@ readTodos = (filepath, callback) ->
 # Start up the server
 #
 
-# wrap this so that the psuedo-globals (todoFile and todoArray) don't pollute the helper methods above
+# wrap this so that the globals (todoFile and todoArray) don't pollute the helper methods above
 (() ->
 	
 	#
@@ -172,16 +183,40 @@ readTodos = (filepath, callback) ->
 			server.use(express.errorHandler({ dumpExceptions: true, showStack: true }))
 		)
 		
-		server.get("/todos", (request, response) ->
+		# paths supported
+		todosPath = "/todos"
+		singleTodoPath = todosPath + "/:todoId?"
+		
+		# get the whole list of todos
+		server.get(todosPath, (request, response) ->
 			response.send(todoArray)
 		)
 		
-		singleTodoPath = "/todo/:todoId"
-		server.get(singleTodoPath, parseTodoId, ensureTodoExistsForId.bind(undefined, todoArray), (request, response) ->
+		# create a new todo
+		server.post(todosPath, (request, response) ->
+			[success, newTodo] = createTodo(request.body)
+			if not success
+				response.send( error: "must include a todo property to create a new todo", 400 )
+			
+			index = request.body?.index ? -1
+			if index is -1
+				todoArray.push(newTodo)
+			else
+				todoArray.splice(index, 0, newTodo)
+			
+			writeTodos(todoFile, todoArray, (error) ->
+				if error
+					response.send(error)
+				else
+					response.send({ returnValue: true, todo: newTodo } )
+			)
+		)
+		
+		server.get(singleTodoPath, parseTodoId, ensureTodoExistsForId.curry(todoArray), (request, response) ->
 			response.send(todoArray[request.todoId])
 		)
 		
-		server.post(singleTodoPath, parseTodoId, ensureTodoExistsForId.bind(undefined, todoArray), (request, response) ->
+		server.post(singleTodoPath, parseTodoId, ensureTodoExistsForId.curry(todoArray), (request, response) ->
 			todoId = request.todoId
 			todoArray[todoId] = updateTodo(todoArray[todoId], request.body)
 			
@@ -189,7 +224,7 @@ readTodos = (filepath, callback) ->
 				if error
 					response.send(error)
 				else
-					response.send( returnValue: true )
+					response.send({ returnValue: true, todo: todoArray[todoId] } )
 			)
 		)
 		

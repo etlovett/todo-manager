@@ -1,4 +1,6 @@
-0. ! Get node.js reading the file format correctly.
-1. - Write a README.
-2.   Set up an HTTP server for the client to talk to.
-3.   Set up the client to talk to the server and display the list.
+0.   Determine what the project should be.
+1. ! Get node.js reading the file format correctly.
+2. - Write a README.
+3.   Set up an HTTP server for the client to talk to.
+4.   Set up the client to talk to the server and display the list.
+5.   Enable creating new todos.
