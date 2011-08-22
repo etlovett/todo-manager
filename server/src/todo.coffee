@@ -25,6 +25,9 @@ class Todo
 				return importanceObj.CHAR
 		return Todo.IMPORTANCE.REGULAR.CHAR
 	
+	@isValidRawTodo: (fields) ->
+		# TODO: check more properties for validity?
+		return !!fields.todo and typeof fields.todo is "string"
 	
 	# 
 	# Instance methods

@@ -81,13 +81,10 @@ todoList.readFromFile( (error) ->
 	
 	# create a new todo and persist the update
 	server.post(todosPath, (request, response) ->
-		if not fields.todo
+		if not Todo.isValidRawTodo(fields.todo)
 			response.send( error: "must include a todo property to create a new todo", 400 )
 		
-		newTodo = new Todo(fields)
-		index = request.body?.index ? -1
-		
-		todoList.add(newTodo, index, (error, addedTodo) ->
+		todoList.add(fields, request.body?.index, (error, addedTodo) ->
 			if error
 				response.send(error)
 			else
@@ -102,9 +99,7 @@ todoList.readFromFile( (error) ->
 	
 	# update a single todo and persist the update
 	server.post(singleTodoPath, parseTodoId, ensureTodoExistsForId, (request, response) ->
-		todoId = request.todoId
-		
-		todoList.update(todoId, request.body, (error, updatedTodo) ->
+		todoList.update(request.todoId, request.body, (error, updatedTodo) ->
 			if error
 				response.send(error)
 			else
