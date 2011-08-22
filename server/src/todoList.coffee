@@ -4,8 +4,8 @@ class TodoList
 	# 
 	# Static methods and properties
 	# 
-	@constructFromJsonString: (jsonString) ->
-		todoArray = jsonString.split(/[\n\r]+/g)
+	@parseFileData: (fileData) ->
+		todoArray = fileData.split(/[\n\r]+/g)
 		
 		# parse each line in the file
 		todoArray = todoArray.map( (todoString) ->
@@ -38,7 +38,7 @@ class TodoList
 			}
 		, this)
 		
-		return new TodoList(todoArray)
+		return todoArray
 	
 	
 	# 
@@ -46,17 +46,23 @@ class TodoList
 	# 
 	constructor: (todoArray, todos...) ->
 		@_list = []
+		@_doReset(todoArray, todos...)
 	
+	reset: (todoArray, todos...) ->
+		@_doReset(todoArray, todos...)
+	
+	_doReset: (todoArray, todos...) ->
+		@_list = []
 		# accept both a single array and separate arguments
 		if Array.isArray(todoArray)
-			@add(todo) for todo in todoArray
+			@_doAdd(todo) for todo in todoArray
 		else if todoArray
-			@add(todo) for todo in [todoArray, todos...]
-	
-	todoExists: (index) ->
-		return not not @get(index)
+			@_doAdd(todo) for todo in [todoArray, todos...]
 	
 	add: (todo, index) ->
+		return @_doAdd(todo, index)
+	
+	_doAdd: (todo, index) ->
 		if not (todo instanceof Todo)
 			todo = new Todo(todo)
 		
@@ -64,15 +70,19 @@ class TodoList
 			@_list.splice(index, 0, todo)
 		else
 			@_list.push(todo)
+		
+		return todo
 	
 	get: (index) ->
 		return @_list[index]
 	
-	update: (index, todo) ->
-		if not (todo instanceof Todo)
-			todo = new Todo(todo)
-		
-		@_list[index] = todo
+	update: (index, newFields) ->
+		todo = @_list[index]
+		todo.update(newFields)
+		return todo
+	
+	todoExists: (index) ->
+		return not not @get(index)
 	
 	length: () ->
 		return @_list.length
