@@ -28,12 +28,12 @@ build = (watch, callback) ->
 	spawnChild "coffee", serverOptions, intermediateCallback
 	spawnChild "coffee", clientOptions, intermediateCallback
 
-task "build", "Compile CoffeeScript source files", ->
+task "build", "Compile CoffeeScript source files", () ->
 	build()
 
-task "watch", "Recompile CoffeeScript source files when modified", ->
+task "watch", "Recompile CoffeeScript source files when modified", () ->
 	build true
 
-task "start", "Start server", ->
+task "start", "Start server", () ->
 	build false, (status) ->
 		if status is 0 then spawnChild "node", ["server/lib/server.js"]
