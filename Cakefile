@@ -35,4 +35,5 @@ task "watch", "Recompile CoffeeScript source files when modified", ->
 	build true
 
 task "start", "Start server", ->
-	spawnChild "node", ["server/lib/server.js"]
+	build false, (status) ->
+		if status is 0 then spawnChild "node", ["server/lib/server.js"]
