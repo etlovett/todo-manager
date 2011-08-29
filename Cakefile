@@ -2,6 +2,7 @@
 
 spawnChild = (command, options, callback) ->
 	child = spawn command, options
+	console.log "spawned child for '" + command + "'.  pid: " + child.pid
 	child.stdout.on "data", (data) -> process.stdout.write data.toString()
 	child.stderr.on "data", (data) -> process.stderr.write data.toString()
 	process.on "SIGHUP", () -> child.kill()
