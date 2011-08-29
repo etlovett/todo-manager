@@ -107,5 +107,9 @@ todoList.readFromFile( (error) ->
 		)
 	)
 	
+	server.get("/js/:filename", (request, response) ->
+		response.sendfile(__dirname + "/" + request.params.filename)
+	)
+	
 	server.listen(5834, () -> console.log("listening!") )
 )
