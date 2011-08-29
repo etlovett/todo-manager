@@ -13,20 +13,11 @@ build = (watch, callback) ->
 	if typeof watch is "function"
 		callback = watch
 		watch = false
-	serverOptions = ["-c", "-o", "server/lib/", "server/src/"]
-	clientOptions = ["-c", "-o", "client/lib/", "client/src/"]
+	options = ["-c", "-o", "build/", "source/"]
 	if watch
-		serverOptions.unshift "-w"
-		clientOptions.unshift "-w"
+		options.unshift "-w"
 	
-	oneDone = false
-	intermediateCallback = (status) ->
-		if oneDone
-			callback?(status)
-		else
-			oneDone = true
-	spawnChild "coffee", serverOptions, intermediateCallback
-	spawnChild "coffee", clientOptions, intermediateCallback
+	spawnChild "coffee", options, callback
 
 task "build", "Compile CoffeeScript source files", () ->
 	build()
@@ -36,4 +27,4 @@ task "watch", "Recompile CoffeeScript source files when modified", () ->
 
 task "start", "Start server", () ->
 	build false, (status) ->
-		if status is 0 then spawnChild "node", ["server/lib/server.js"]
+		if status is 0 then spawnChild "node", ["build/server.js"]
