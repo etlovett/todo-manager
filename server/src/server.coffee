@@ -66,7 +66,7 @@ todoList.readFromFile( (error) ->
 		server.use(express.favicon())
 		server.use(express.bodyParser())
 		server.use(server.router)
-		# server.use(express.static(__dirname + "/../static", { maxAge: 24 * 60 * 60 * 1000 }))
+		server.use(express.static(__dirname + "/../static", { maxAge: 24 * 60 * 60 * 1000 }))
 		server.use(express.errorHandler({ dumpExceptions: true, showStack: true }))
 	)
 	
