@@ -62,6 +62,9 @@ class TodoList
 		todo.update(newFields)
 		return todo
 	
+	del: (index) ->
+		return @_doDel(index)
+	
 	todoExists: (index) ->
 		return not not @get(index)
 	
@@ -96,6 +99,9 @@ class TodoList
 			@_list.push(todo)
 		
 		return todo
+	
+	_doDel: (index) ->
+		return @_list.splice(index, 1);
 	
 
 # 

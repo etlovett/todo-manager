@@ -66,6 +66,12 @@ class FileBasedTodoList extends TodoList
 			callback(error, todo)
 		)
 
+	del: (args..., callback) ->
+		todo = super(args...)
+		@writeToFile( (error) =>
+			callback(error, todo)
+		)
+
 
 # 
 # Exports
