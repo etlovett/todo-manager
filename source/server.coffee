@@ -30,6 +30,12 @@ ensureTodoExistsForId = (request, response, next) ->
 	else
 		response.send( error: "no todo exists at that id", 400 )
 
+defaultTodoListActionCallback = (error, todo) ->
+	if error
+		response.send(error)
+	else
+		response.send({ returnValue: true, todo: todo.asRawObject() } )
+
 
 #
 # Set up our globals
@@ -84,12 +90,7 @@ todoList.readFromFile( (error) ->
 		if not Todo.isValidRawTodo(fields.todo)
 			response.send( error: "must include a todo property to create a new todo", 400 )
 		
-		todoList.add(fields, request.body?.index, (error, addedTodo) ->
-			if error
-				response.send(error)
-			else
-				response.send({ returnValue: true, todo: addedTodo.asRawObject() } )
-		)
+		todoList.add(fields, request.body?.index, defaultTodoListActionCallback)
 	)
 	
 	# get a single todo
@@ -99,17 +100,20 @@ todoList.readFromFile( (error) ->
 	
 	# update a single todo and persist the update
 	server.post(singleTodoPath, parseTodoId, ensureTodoExistsForId, (request, response) ->
-		todoList.update(request.todoId, request.body, (error, updatedTodo) ->
-			if error
-				response.send(error)
-			else
-				response.send({ returnValue: true, todo: updatedTodo.asRawObject() } )
-		)
+		todoList.update(request.todoId, request.body, defaultTodoListActionCallback)
+	)
+	
+	# delete a single todo and persist the delete
+	server.del(singleTodoPath, parseTodoId, ensureTodoExistsForId, (request, response) ->
+		todoList.del(request.todoId, defaultTodoListActionCallback)
 	)
 	
 	server.get("/js/:filename", (request, response) ->
 		response.sendfile(__dirname + "/" + request.params.filename)
 	)
+	# server.get("/:dummy/:dummy2?", (request, response) ->
+	# 	response.redirect("home")
+	# )
 	
 	server.listen(5834, () -> console.log("listening!") )
 )
