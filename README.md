@@ -4,7 +4,7 @@ A super basic TODO manager, because the world needs more of those.
 ## Primary Goals
 1. Have a Node.js-based server that talks to a browser-based front-end.
 2. TODOs are stored in a basic flat text file that can therefore be edited and searched outside of this TODO manager.
-3. I get to play with Node.js and other fun technologies.
+3. I get to play with Node.js and other fun things.
 
 ## Author
 * Eric Lovett etlovett@github
